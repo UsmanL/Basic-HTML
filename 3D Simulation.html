@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine Login & Signup</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #050508; overflow: hidden; font-family: monospace; }
+        /* Canvas ko background mein fix kar diya hai taake yeh backdrop ban jaye */
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; display: block; }
+        /* Glassmorphism Effect for Modern UI */
+        .glass {
+            background: rgba(15, 15, 25, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center h-screen">
+
+    <!-- Background Physics Particle Vortex Canvas -->
+    <canvas id="canvas"></canvas>
+
+    <!-- Foreground Login / Signup Container -->
+    <div class="glass p-8 rounded-2xl shadow-2xl w-96 text-white relative z-10">
+        
+        <!-- Toggle Tabs (Login / Sign Up) -->
+        <div class="flex justify-around mb-6 border-b border-gray-700 pb-3">
+            <button id="loginTab" onclick="switchTab('login')" class="font-bold text-lg text-cyan-400 border-b-2 border-cyan-400 pb-1 transition cursor-pointer">Login</button>
+            <button id="signupTab" onclick="switchTab('signup')" class="font-bold text-lg text-gray-400 pb-1 transition cursor-pointer">Sign Up</button>
+        </div>
+
+        <!-- Form Elements -->
+        <form id="authForm" onsubmit="handleSubmit(event)">
+            <!-- Full Name (Only visible in Sign Up mode) -->
+            <div id="nameField" class="mb-4 hidden">
+                <label class="block text-gray-300 text-sm font-semibold mb-2" for="name">Full Name</label>
+                <input class="w-full px-3 py-2 bg-black/40 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition" type="text" id="name" placeholder="Enter your name">
+            </div>
+
+            <!-- Email Field -->
+            <div class="mb-4">
+                <label class="block text-gray-300 text-sm font-semibold mb-2" for="email">Email Address</label>
+                <input class="w-full px-3 py-2 bg-black/40 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition" type="email" id="email" placeholder="Enter your email" required>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-6">
+                <label class="block text-gray-300 text-sm font-semibold mb-2" for="password">Password</label>
+                <input class="w-full px-3 py-2 bg-black/40 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition" type="password" id="password" placeholder="Enter your password" required>
+            </div>
+
+            <!-- Submit Button -->
+            <button id="submitBtn" class="w-full bg-cyan-500 text-black font-bold py-2.5 px-4 rounded-lg hover:bg-cyan-400 transition duration-200 shadow-lg shadow-cyan-500/20 cursor-pointer" type="submit">Login</button>
+        </form>
+
+        <div class="mt-4 text-center text-xs text-gray-500">
+            Move mouse to interact with physics field
+        </div>
+    </div>
+
+    <script>
+        // --- UI Logic (Login / Signup Toggle) ---
+        let isLogin = true;
+        function switchTab(tab) {
+            const loginTab = document.getElementById('loginTab');
+            const signupTab = document.getElementById('signupTab');
+            const nameField = document.getElementById('nameField');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (tab === 'login') {
+                isLogin = true;
+                loginTab.className = "font-bold text-lg text-cyan-400 border-b-2 border-cyan-400 pb-1 transition cursor-pointer";
+                signupTab.className = "font-bold text-lg text-gray-400 pb-1 transition cursor-pointer";
+                nameField.classList.add('hidden');
+                submitBtn.innerText = "Login";
+            } else {
+                isLogin = false;
+                signupTab.className = "font-bold text-lg text-cyan-400 border-b-2 border-cyan-400 pb-1 transition cursor-pointer";
+                loginTab.className = "font-bold text-lg text-gray-400 pb-1 transition cursor-pointer";
+                nameField.classList.remove('hidden');
+                submitBtn.innerText = "Sign Up";
+            }
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            if (isLogin) {
+                alert(`Successfully Logged in with: ${email}`);
+            } else {
+                const name = document.getElementById('name').value;
+                alert(`Account created successfully for ${name}!`);
+            }
+        }
+
+
+        // --- Applied Math & Physics Particle Vortex Engine (Background) ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        // Mouse coordinates tracking
+        const mouse = { x: width / 2, y: height / 2, isDown: false };
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('mousedown', () => mouse.isDown = true);
+        window.addEventListener('mouseup', () => mouse.isDown = false);
+
+        const PARTICLE_COUNT = 1500;
+        const particles = [];
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.ax = 0;
+                this.ay = 0;
+                this.radius = Math.random() * 1.5 + 0.5;
+            }
+
+            update() {
+                // Euler Integration & Damping
+                this.vx += this.ax;
+                this.vy += this.ay;
+                this.vx *= 0.96;
+                this.vy *= 0.96;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                this.ax = 0;
+                this.ay = 0;
+
+                // Screen wrapping
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                const speed = Math.hypot(this.vx, this.vy);
+                ctx.fillStyle = `hsl(${180 + speed * 25}, 100%, 60%)`;
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push(new Particle(Math.random() * width, Math.random() * height));
+        }
+
+        function animate() {
+            // Motion blur trail effect
+            ctx.fillStyle = 'rgba(5, 5, 8, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            const time = Date.now() * 0.001;
+
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+
+                // Inverse-square law force calculation around mouse
+                const dx = mouse.x - p.x;
+                const dy = mouse.y - p.y;
+                const distSq = dx * dx + dy * dy + 1500;
+                
+                const forceMagnitude = mouse.isDown ? -70000 / distSq : 30000 / distSq;
+                const angle = Math.atan2(dy, dx);
+
+                p.ax += Math.cos(angle) * forceMagnitude * 0.02;
+                p.ay += Math.sin(angle) * forceMagnitude * 0.02;
+
+                // Mathematical turbulence wave
+                p.ax += Math.cos(p.y * 0.008 + time) * 0.3;
+                p.ay += Math.sin(p.x * 0.008 + time) * 0.3;
+
+                p.update();
+                p.draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
